@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline - Notion Electron</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: #121212;
+        color: #ffffff;
+      }
+      .card {
+        background: #1e1e1e;
+        border-radius: 16px;
+        padding: 2rem;
+        max-width: 640px;
+        width: 100%;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+      }
+      h1 {
+        margin-top: 0;
+      }
+      p {
+        margin: 1rem 0;
+        line-height: 1.6;
+      }
+      button {
+        background: #3b82f6;
+        color: #ffffff;
+        border: none;
+        padding: 0.9rem 1.4rem;
+        margin-right: 1rem;
+        border-radius: 999px;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+      .buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+      }
+      .secondary {
+        background: transparent;
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+      }
+      .small {
+        opacity: 0.8;
+        font-size: 0.95rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Você está offline</h1>
+      <p>Não foi possível carregar o Notion. Verifique sua conexão ou abra uma versão em cache.</p>
+      <p class="small" id="offline-info"></p>
+      <div class="buttons">
+        <button id="retry">Recarregar</button>
+        <button id="cached" class="secondary">Abrir versão em cache</button>
+      </div>
+      <p class="small">Se você ativar o modo offline em "Arquivo > Modo Offline", o app irá salvar as páginas carregadas quando estiver online.</p>
+    </div>
+
+    <script>
+      const infoEl = document.getElementById('offline-info');
+      const retryButton = document.getElementById('retry');
+      const cachedButton = document.getElementById('cached');
+
+      async function init() {
+        const info = await window.electronAPI.getOfflineInfo();
+        infoEl.textContent = `URL: ${info.url || 'desconhecida'} | Erro: ${info.error || 'sem descrição'}`;
+        cachedButton.disabled = !info.cached;
+      }
+
+      retryButton.addEventListener('click', async () => {
+        await window.electronAPI.retryOffline();
+      });
+
+      cachedButton.addEventListener('click', async () => {
+        const info = await window.electronAPI.getOfflineInfo();
+        if (info.url) {
+          await window.electronAPI.loadCachedPage(info.url);
+        }
+      });
+
+      window.addEventListener('DOMContentLoaded', init);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preferências</title>
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --surface: #fff;
+      --text: #222;
+      --hint: #666;
+      --button-bg: #0066ff;
+      --button-hover: #0051d4;
+      --border: rgba(0,0,0,0.08);
+    }
+
+    [data-theme="dark"] {
+      --bg: #121212;
+      --surface: #1f1f1f;
+      --text: #f5f5f5;
+      --hint: #bbb;
+      --button-bg: #4a90ff;
+      --button-hover: #3574d4;
+      --border: rgba(255,255,255,0.08);
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 24px;
+    }
+    .section {
+      background: var(--surface);
+      border-radius: 12px;
+      box-shadow: 0 1px 4px var(--border);
+      margin-bottom: 18px;
+      padding: 18px;
+    }
+    .field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .field label {
+      font-weight: 600;
+      margin-right: 12px;
+      flex: 1;
+    }
+    select, input[type="text"], input[type="checkbox"] {
+      font-size: 14px;
+    }
+    .hint {
+      color: var(--hint);
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    button {
+      background: var(--button-bg);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background: var(--button-hover);
+    }
+    .footer {
+      text-align: right;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Preferências</h1>
+  <div class="section">
+    <div class="field">
+      <label for="theme-select">Tema do app</label>
+      <select id="theme-select">
+        <option value="system">Sistema</option>
+        <option value="light">Claro</option>
+        <option value="dark">Escuro</option>
+      </select>
+    </div>
+    <div class="hint">Escolha entre tema claro, escuro ou seguir o sistema.</div>
+  </div>
+  <div class="section">
+    <div class="field">
+      <label for="offline-checkbox">Modo Offline</label>
+      <input type="checkbox" id="offline-checkbox" />
+    </div>
+    <div class="hint">Ativar cache local de páginas para carregar quando não houver conexão.</div>
+  </div>
+  <div class="section">
+    <div class="field">
+      <label for="shortcut-checkbox">Ativar atalho global</label>
+      <input type="checkbox" id="shortcut-checkbox" />
+    </div>
+    <div class="field">
+      <label for="shortcut-input">Atalho de abrir</label>
+      <input type="text" id="shortcut-input" />
+    </div>
+    <div class="hint">O atalho funciona mesmo quando o aplicativo não está em foco.</div>
+    <div class="hint">Use um formato com modificadores e uma tecla final, por exemplo: CommandOrControl+Shift+N.</div>
+    <div class="hint">Modificadores válidos: CommandOrControl, CmdOrCtrl, Command, Cmd, Control, Ctrl, Alt, Option, AltGr, Shift, Super, Meta.</div>
+  </div>
+  <div class="section">
+    <div class="field">
+      <label for="tray-checkbox">Fechar para bandeja</label>
+      <input type="checkbox" id="tray-checkbox" />
+    </div>
+    <div class="field">
+      <label for="notifications-checkbox">Notificações</label>
+      <input type="checkbox" id="notifications-checkbox" />
+    </div>
+    <div class="hint">Gerencie o comportamento da janela e notificações do app.</div>
+  </div>
+  <div class="footer">
+    <button id="save-button">Salvar</button>
+  </div>
+  <script>
+    const themeSelect = document.getElementById('theme-select');
+    const offlineCheckbox = document.getElementById('offline-checkbox');
+    const shortcutCheckbox = document.getElementById('shortcut-checkbox');
+    const shortcutInput = document.getElementById('shortcut-input');
+    const trayCheckbox = document.getElementById('tray-checkbox');
+    const notificationsCheckbox = document.getElementById('notifications-checkbox');
+    const saveButton = document.getElementById('save-button');
+
+    function normalizeShortcut(value) {
+      return value.trim().replace(/\s+/g, '');
+    }
+
+    function isReservedAccelerator(value) {
+      const reserved = [
+        'CommandOrControl+Q',
+        'CmdOrCtrl+Q',
+        'CommandOrControl+W',
+        'CmdOrCtrl+W',
+        'CommandOrControl+R',
+        'CmdOrCtrl+R',
+        'CommandOrControl+N',
+        'CmdOrCtrl+N',
+        'CommandOrControl+,',
+        'CmdOrCtrl+,',
+        'F5',
+        'F11'
+      ];
+      return reserved.includes(value);
+    }
+
+    function validateAccelerator(value) {
+      const normalized = normalizeShortcut(value);
+      if (!normalized) return false;
+      const modifierPattern = '(?:CommandOrControl|CmdOrCtrl|Command|Cmd|Control|Ctrl|Alt|Option|AltGr|Shift|Super|Meta)';
+      const acceleratorRegex = new RegExp(`^(?:${modifierPattern}\\+)+[^+\\s]+$`);
+      if (!acceleratorRegex.test(normalized)) return false;
+      const parts = normalized.split('+');
+      if (parts.length < 2 || parts.length > 4) return false;
+      if (isReservedAccelerator(normalized)) return false;
+      return true;
+    }
+
+    function showShortcutError(message) {
+      let errorElement = document.getElementById('shortcut-error');
+      if (!errorElement) {
+        errorElement = document.createElement('div');
+        errorElement.id = 'shortcut-error';
+        errorElement.style.color = '#c00';
+        errorElement.style.marginTop = '4px';
+        errorElement.style.fontSize = '13px';
+        shortcutInput.parentNode.appendChild(errorElement);
+      }
+      errorElement.textContent = message;
+    }
+
+    function clearShortcutError() {
+      const errorElement = document.getElementById('shortcut-error');
+      if (errorElement) {
+        errorElement.textContent = '';
+      }
+    }
+
+    function updateThemeClass(theme) {
+      const root = document.documentElement;
+      if (theme === 'system') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+      } else {
+        root.setAttribute('data-theme', theme);
+      }
+    }
+
+    async function loadSettings() {
+      const config = await window.electronAPI.getAllConfig();
+      themeSelect.value = config.theme || 'system';
+      offlineCheckbox.checked = config.offlineMode;
+      shortcutCheckbox.checked = config.globalShortcutEnabled;
+      shortcutInput.value = config.openWindowShortcut || 'CommandOrControl+Shift+N';
+      trayCheckbox.checked = config.minimizeToTray;
+      notificationsCheckbox.checked = config.notificationsEnabled;
+      updateThemeClass(config.theme || 'system');
+    }
+
+    async function saveSettings() {
+      const shortcutValue = normalizeShortcut(shortcutInput.value) || 'CommandOrControl+Shift+N';
+      if (shortcutCheckbox.checked) {
+        if (isReservedAccelerator(shortcutValue)) {
+          showShortcutError('Atalho reservado. Use outro atalho para abrir o app.');
+          return;
+        }
+        if (!validateAccelerator(shortcutValue)) {
+          showShortcutError('Atalho inválido. Use um formato como CommandOrControl+Shift+N.');
+          return;
+        }
+      }
+
+      clearShortcutError();
+      await window.electronAPI.setConfig('theme', themeSelect.value);
+      await window.electronAPI.setConfig('offlineMode', offlineCheckbox.checked);
+      await window.electronAPI.setConfig('globalShortcutEnabled', shortcutCheckbox.checked);
+      await window.electronAPI.setConfig('openWindowShortcut', shortcutValue);
+      await window.electronAPI.setConfig('minimizeToTray', trayCheckbox.checked);
+      await window.electronAPI.setConfig('notificationsEnabled', notificationsCheckbox.checked);
+      updateThemeClass(themeSelect.value);
+      saveButton.textContent = 'Salvo!';
+      setTimeout(() => (saveButton.textContent = 'Salvar'), 1200);
+    }
+
+    shortcutInput.addEventListener('input', () => {
+      if (!shortcutCheckbox.checked) {
+        clearShortcutError();
+        return;
+      }
+      const value = shortcutInput.value;
+      if (!validateAccelerator(value)) {
+        showShortcutError('Use um atalho válido, por exemplo: CommandOrControl+Shift+N.');
+      } else {
+        clearShortcutError();
+      }
+    });
+
+    saveButton.addEventListener('click', saveSettings);
+    loadSettings();
+  </script>
+</body>
+</html>
