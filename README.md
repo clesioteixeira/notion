@@ -4,8 +4,8 @@ Aplicativo Electron avançado para abrir o Notion com interface nativa, seguran�
 
 ## Pré-requisitos
 
-- Node.js (recomendado >= 16)
-- npm (>= 8.0)
+- Node.js (recomendado >= 26.2.0)
+- npm (>= 11.16)
 
 ## Desenvolvimento
 
